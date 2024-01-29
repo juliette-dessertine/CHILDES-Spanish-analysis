@@ -1,0 +1,401 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Jan 17 13:22:45 2024
+
+@author: juliettedessertine
+"""
+
+
+
+'get_pairs retrieves the pairs from the files created with the SpAgr_Final code and returns the types'
+'of pair for each child, meaning it doesnt work on the file level like SpAgr_final but aggregates the'
+'pairs of all the files of each child.'
+
+def get_pairs (file) :
+    
+    file = open(file,'r')
+    pairs = []
+    for line in file :
+        line = file.readline()
+        delimiters_1 = [i for i, c in enumerate(line) if c == ';']
+
+       
+        if len(delimiters_1) > 1 : 
+            cuts_1 = [delimiters_1[5],delimiters_1[6]]
+            potential_pair = line[cuts_1[0]+1:cuts_1[1]]
+            delimiters_2 = [i for i, c in enumerate(potential_pair) if c == "'"]
+            potential_pair = [potential_pair[delimiters_2[0]+1:delimiters_2[1]],potential_pair[delimiters_2[2]+1:delimiters_2[3]]]
+            
+        if potential_pair not in pairs :
+            pairs.append(potential_pair)
+            
+    return pairs
+
+
+
+
+'get_ending takes a word and returns its "phonetical" ending, meaning it could be a single letter'
+'or several ones if the words ends in a diphtongue or consonant. if word ends in a vowel, function looks' 
+'if the vowel is part of a diphtongue to include it in the ending. if word ends in consonant, function'
+'gets to the closest vowel and then looks if it is part of a diphtongue following same procedure as'
+'when the word ends with vowel. the argument size_lim is mainly a debugging which imposes a word size'
+'limit set to 2.'
+    
+def get_ending (word, size_lim) : 
+
+        
+    ending = word[len(word)-1] #taking last letter
+        
+    dip_a = ['i','u']
+    dip_e = ['i','u']
+    dip_i = ['a','e','o','u']
+    dip2_i = ['ué','ié','io','ua','iá']
+    dip_o = ['i','u']
+    dip_u = ['i','a','e']
+    dip2_u = ['ua']
+    dip_é = ['i']
+    dip_y = ['a','e','o','u']
+    dip2_y = ['ue','ua']
+        
+        
+    vowels = ['a','e','i','o','u','á','é','í','ó','ú','y']
+        
+    if ending in vowels : #if word ends with vowel
+            
+        if ending == 'a' : 
+            for letter in dip_a : #looks for a diphtongue before the vowel
+                if len(word) >= size_lim and word[len(word)-2] == letter : #size_lim avoids looking for unexistent letter which would stop the function from running
+                    ending = letter + ending #adds previous letters of the diphtongue to the ending
+        
+        elif ending == 'e' :
+            for letter in dip_e :
+                if len(word) >= size_lim and word[len(word)-2] == letter :
+                    if len(word) >= size_lim+1 and word[len(word)-3]+word[len(word)-2] == 'qu' :
+                        ending = 'e'
+                    elif len(word) >= size_lim+1 and word[len(word)-3]+word[len(word)-2] == 'gu' :
+                        ending = 'e'
+                    else :
+                        ending = letter + ending 
+                        
+        elif ending == 'i' :
+            for letter in dip_i :
+                if len(word) >= size_lim and word[len(word)-2] == letter :
+                    if len(word) >= size_lim+1 and word[len(word)-3]+word[len(word)-2] == 'gu' :
+                        ending = 'i'
+                    else :
+                        ending = letter + ending 
+            for letters in dip2_i :
+                if len(word) >= size_lim+1 and word[len(word)-3]+word[len(word)-2] == letters :
+                    ending = letters + 'i'
+                        
+        elif ending == 'o' :
+            for letter in dip_o :
+                if len(word) >= size_lim and word[len(word)-2] == letter :
+                    ending = letter + ending
+                        
+        elif ending == 'u' :
+            for letter in dip_u :
+                if len(word) >= size_lim and word[len(word)-2] == letter :
+                    ending += letter
+            for letters in dip2_u :
+                if len(word) >= 3 and word[len(word)-3]+word[len(word)-2] == letters :
+                    ending = letters + 'u'
+                     
+        elif ending == 'é' :
+            for letter in dip_é :
+                if len(word) >= size_lim and word[len(word)-2] == letter :
+                    if len(word) >= size_lim+1 and word[len(word)-3]+word[len(word)-2] == 'gu' :
+                        ending = 'é'
+                    else :
+                        ending = letter + ending 
+        
+        elif ending == 'y' :
+            for letter in dip_y :
+                if len(word) >= size_lim and word[len(word)-2] == letter :
+                    ending = letter + ending
+            for letters in dip2_y :
+                if len(word) >= 3 and word[len(word)-3]+word[len(word)-2] == letters :
+                    ending = letters +'y'
+                    
+            
+    else : #if word ends with consonant
+
+        index = len(word)-2 #index of letter just before last consonant of the word, e.g. last letter 
+        previous_letter = word[index]
+        while previous_letter not in vowels and index >= 0 : #going through the letters backwards until it finds a vowel while staying "inside" the word 
+            index = index - 1
+            previous_letter = word[index]
+            
+        last_part = word[index+1:] #keeping in store the final consonants 
+        word = word[:index+1] #taking the other part of the word as a new one to work the same way (with potential diphtongues) as if the word ended with a vowel
+        
+        if len(word) > 1 : #selecting the vowel ending to search for diphtongues
+            ending = word[len(word)-1]
+        else :
+            ending = word
+
+        #searching for diphtongues
+        if ending == 'a' :
+            for letter in dip_a :
+                if len(word) >= size_lim and word[len(word)-2] == letter :
+                    ending = letter + ending
+            
+        elif ending == 'e' :
+            for letter in dip_e :
+                if len(word) >= size_lim and word[len(word)-2] == letter :
+                    if len(word) >= size_lim+1 and word[len(word)-3]+word[len(word)-2] == 'qu' :
+                        ending = 'e'
+                    elif len(word) >= size_lim+1 and word[len(word)-3]+word[len(word)-2] == 'gu' :
+                        ending = 'e'
+                    else :
+                        ending = letter + ending 
+                            
+        elif ending == 'i' :
+            for letter in dip_i :
+                if len(word) >= size_lim and word[len(word)-2] == letter :
+                    if len(word) >= size_lim+1 and word[len(word)-3]+word[len(word)-2] == 'gu' :
+                        ending = 'i'
+                    else :
+                        ending = letter + ending 
+            for letters in dip2_i :
+                if len(word) >= size_lim+1 and word[len(word)-3]+word[len(word)-2] == letters :
+                    ending = letters + 'i' 
+                            
+        elif ending == 'o' :
+            for letter in dip_o :
+                if len(word) >= size_lim and word[len(word)-2] == letter :
+                    ending = letter + ending
+                            
+        elif ending == 'u' :
+            for letter in dip_u :
+                if len(word) >= size_lim and word[len(word)-2] == letter :
+                    ending = letter + ending
+            for letters in dip2_u :
+                if len(word) >= 3 and word[len(word)-3]+word[len(word)-2] == letters :
+                    ending = letters + 'u' 
+                         
+        elif ending == 'é' :
+            for letter in dip_é :
+                if len(word) >= size_lim and word[len(word)-2] == letter :
+                    if len(word) >= size_lim+1 and word[len(word)-3]+word[len(word)-2] == 'gu' :
+                        ending = 'é'
+                    else :
+                        ending = letter + ending 
+                        
+        elif ending == 'y' :
+            for letter in dip_y :
+                if len(word) >= size_lim and word[len(word)-2] == letter :
+                    ending += letter
+            for letters in dip2_y :
+                if len(word) >= 3 and word[len(word)-3]+word[len(word)-2] == letters :
+                    ending = letters + 'y'
+                        
+        if last_part != 'h' : #excluding the 'h' as it is silent 
+            ending += last_part #adding the ending found with the vowel-diphtongue procedure to the final consonants
+    
+    
+ 
+    return ending 
+            
+
+
+      
+'get_ending_pair_count takes all the types of pairs of a child, and returns the total number of'
+'types of paired endings (how many different pairs of endings exist), the list of those types of'
+'paired endings, and the list of the counts of each of those types of paired endings'
+
+def get_ending_pair_count (pairs) :  
+
+    ending_pair = [] #types of paired endings
+    ending_pair_count = [] #counts of each type of paired endings
+    all_ending_pairs = [] #paired endings of each type of word pair
+   
+
+    for pair in pairs :
+        all_ending_pairs.append([get_ending(pair[0],2),get_ending(pair[1],2)]) #getting the ending of each word of the pair, with size_lim = 2
+
+    for end_pair in all_ending_pairs :
+        potential_ending_pair = end_pair 
+        if potential_ending_pair not in ending_pair : #excluding potential repetition of paired endings coming from different word pairs having the same endings
+            ending_pair.append(potential_ending_pair)
+        
+    
+    count = 0
+    for k in ending_pair :
+        for j in all_ending_pairs :
+            if k == j :
+                count+= 1
+        ending_pair_count.append(count) #list of the count for each type of paired ending
+        count = 0
+    
+    
+    return len(all_ending_pairs), ending_pair, ending_pair_count
+
+
+
+
+'get_ending_indiv_count is basically the same as get_ending_pair_count but for individual endings.'
+'It takes all the types of pairs of a file and returns the number of endings from the types of words' 
+'(= number of types of words), the types of endings (regardless of their word of origin, meaning if two' 
+'different words have the same ending, this ending will only appear once), and the list of the counts'
+'of each of those types of ending.'
+
+def get_ending_indiv_count (pairs) :
+    
+    ending_inv = []
+    all_endings = []
+    ending_counts = []
+    word_types = []
+    
+    for i in range(len(pairs)) : 
+        pair = pairs[i]
+        word_1 = pair[0]
+        word_2 = pair[1]
+        
+        potential_word = word_1 
+        if potential_word not in word_types :
+            word_types.append(potential_word)
+        
+        potential_word = word_2 
+        if potential_word not in word_types :
+            word_types.append(potential_word)
+        
+    for word in word_types :
+        all_endings.append(get_ending(word,2))
+    
+    for ending in all_endings :
+        potential_ending = ending 
+        if potential_ending not in ending_inv :
+            ending_inv.append(potential_ending)
+
+    count = 0
+    for k in ending_inv :
+        for j in all_endings :
+            if k == j :
+                count += 1
+        ending_counts.append(count) #list of the count for each type of individual ending
+        count = 0
+    
+    ending_inv_size = len(all_endings)
+    
+    return ending_inv_size, ending_inv, ending_counts 
+
+
+
+
+'get_data takes the results from get_ending_indiv_count and get_ending_pair_count to calculate'
+'the frequencies and the other informations that will be added to the csv file. The frequency'
+'of an ending equates to the count of this ending in all the childs files (how many times it appears'
+'in all the types of word of the childs files) divided by the total number of endings from different'
+'words. The frequency of a paired ending equates to the count of this paired ending in the childs' 
+'files divided by the total number of paired endings.'
+
+def get_data (name, pairs) :
+    
+    data = []
+    
+    ending_inv_size = get_ending_indiv_count(pairs)[0]
+    ending_inv = get_ending_indiv_count(pairs)[1]
+    ending_counts = get_ending_indiv_count(pairs)[2]
+    
+    ending_pair_size = get_ending_pair_count(pairs)[0]
+    ending_pair = get_ending_pair_count(pairs)[1]
+
+    
+    ending_pair_count = get_ending_pair_count(pairs)[2]
+    
+    
+    
+    for i in range(len(pairs)):
+        language = "spanish"
+        corpus = "FernAguado"
+        #file = name_file
+        
+        pair = pairs[i]
+        
+        
+        word_1 = pair[0]
+        word_2 = pair[1]
+        size_lim = 2
+        ending_1 = get_ending(word_1, size_lim)
+        ending_2 = get_ending(word_2, size_lim)
+
+        pair = '[' + pair[0] + '-' + pair[1] + ']'        
+            
+        index = ending_pair.index([ending_1,ending_2])
+        this_ending_pair_count = ending_pair_count[index]
+        
+        identity = 0
+        if ending_1 == ending_2 :
+            identity = 1
+            
+        
+        index_end_1 = ending_inv.index(ending_1)
+        index_end_2 = ending_inv.index(ending_2)
+        ending_1_count = ending_counts[index_end_1]
+        ending_2_count = ending_counts[index_end_2]
+        
+        ending_pair_freq = this_ending_pair_count/ending_pair_size
+        ending_1_freq = ending_1_count/ending_inv_size
+        ending_2_freq = ending_2_count/ending_inv_size
+            
+        data.append([language, corpus, name, len(ending_inv), len(ending_pair), pair, ending_1, ending_2, identity, this_ending_pair_count, ending_1_count, ending_2_count, ending_pair_freq, ending_1_freq, ending_2_freq ])
+        
+    return data 
+
+
+
+
+'writing_file essentially writes the data for each pair of words into the csv file'
+
+def writing_file (name, pairs) : 
+    
+    import csv
+
+    data = get_data(name, pairs)
+    with open(name+"_file_v2.csv", "a") as f:
+        writer = csv.writer(f, delimiter=",", lineterminator="\n")
+        writer.writerows(data)
+    f.close()
+
+
+'create_files goes through files created with SpAgr_final from all the children and actually creates the'
+'csv files with the header'
+    
+def create_files () : 
+    
+    import os 
+    os.chdir("/Users/juliettedessertine/Desktop/UCLA_LAlab/spanish/Spanish_FernAguado")
+    if '.DS_Store' in os.listdir() :
+        os.remove('.DS_Store')
+    individuals = os.listdir()
+
+    for i in individuals :
+        name = i 
+        os.chdir(i)
+        
+        file = name+"_file.csv"
+        
+        import csv
+        field = ["language", "corpus", "name", "child nb possible endings", "child nb possible paired endings", "pair", "ending 1", "ending 2", "identity", "ending pair count child", "ending 1 count", "ending 2 count", "ending pair freq", "ending 1 freq", "ending 2 freq"]
+        with open(name+"_file_v2.csv", "a") as f:
+            writer = csv.writer(f, delimiter=",", lineterminator="\n")
+            writer.writerow(field)
+
+        pairs = get_pairs(file)
+        writing_file(name, pairs)
+
+        os.chdir("..")
+
+
+
+
+
+
+
+
+
+
+
+
